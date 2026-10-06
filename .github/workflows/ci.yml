@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      - name: Validate compose config
+        run: docker compose config -q
+
+      - name: Build PHP image
+        run: docker compose build php85
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      - name: Wait for php85 to become healthy
+        run: |
+          for i in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' dockphpcuy-php85 2>/dev/null || echo starting)
+            echo "php85: $status"
+            [ "$status" = "healthy" ] && exit 0
+            sleep 2
+          done
+          echo "::error::php85 did not become healthy in time"
+          exit 1
+
+      - name: Validate nginx config
+        run: docker compose exec -T nginx nginx -t
+
+      - name: PHP smoke test
+        run: docker compose exec -T php85 php -m
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs --tail=200
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

@@ -76,6 +76,24 @@ make ps
 
 ---
 
+### Use this as a template
+
+This repo is a starting point — fork or clone it and make it your own:
+
+```bash
+git clone git@github.com:fajar7xx/dockphpcuy.git my-stack
+cd my-stack
+rm -rf .git && git init -b main     # start a fresh history
+cp .env.example .env                # set your own ports / passwords
+make up
+```
+
+Then add your app under `projects/<name>` and open
+`http://<name>.localhost:${NGINX_PORT}/` — the quickest way is
+`make new name=<name>` (see [projects/README.md](projects/README.md)).
+
+---
+
 ## 🔌 Ports
 
 `NGINX_PORT` and `PHPMYADMIN_PORT` in `.env` set the **host** ports. Inside the
@@ -275,6 +293,14 @@ gh repo create dockphpcuy --public --source=. --push
 | Nginx config error | `make nginx-test` to see the reported line |
 | Changes to a vhost don't apply | `make nginx-reload` (applies within a moment) |
 | Wrong project loads | Check `server_name`, and that only one vhost matches the hostname |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Notable changes are
+tracked in [CHANGELOG.md](CHANGELOG.md), and versions are published as
+[GitHub Releases](https://github.com/fajar7xx/dockphpcuy/releases).
 
 ---
 
