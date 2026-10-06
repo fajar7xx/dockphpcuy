@@ -6,7 +6,7 @@ SERVICE ?= php85
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart build rebuild ps logs sh bash db nginx-test nginx-reload exec info new
+.PHONY: help up down restart build rebuild ps logs sh bash db nginx-test nginx-reload exec info new pma-setup
 
 help: ## Show this help
 	@echo "DockPHP Cuy - available commands:"
@@ -41,6 +41,11 @@ bash: ## Bash into the PHP container
 
 db: ## Open the MariaDB client as root
 	$(COMPOSE) exec mariadb mariadb -u root -p
+
+pma-setup: ## Set up the phpMyAdmin configuration storage (pmadb)
+	@$(COMPOSE) exec -T phpmyadmin sh -c 'cat /var/www/html/sql/create_tables.sql' \
+		| $(COMPOSE) exec -T mariadb sh -c 'mariadb -uroot -p"$$MARIADB_ROOT_PASSWORD"'
+	@echo "phpMyAdmin configuration storage is ready."
 
 nginx-test: ## Validate the nginx configuration
 	$(COMPOSE) exec nginx nginx -t

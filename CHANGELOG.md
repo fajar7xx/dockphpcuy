@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `make pma-setup` to enable phpMyAdmin's configuration storage (pmadb)
+- Framework tutorials in the README (Laravel, Symfony, CodeIgniter, plain PHP, WordPress)
+- README: access URLs and phpMyAdmin login instructions
+
 ## [0.1.0] - 2026-10-06
 
 ### Added

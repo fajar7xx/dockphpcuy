@@ -37,7 +37,7 @@ DockPHP Cuy runs a complete PHP stack (Laravel, Symfony, WordPress, or plain PHP
 | `nginx` | `nginx:alpine` | `${NGINX_PORT}` (default `8000`) | `dockphpcuy-nginx` |
 | `php85` | built from [`PHP85/`](PHP85/Dockerfile) | – (internal `9000`) | `dockphpcuy-php85` |
 | `mariadb` | `mariadb:lts` | – (internal `3306`) | `dockphpcuy-mariadb-lts` |
-| `phpmyadmin` | built from [`PHPMyAdmin/`](PHPMyAdmin/Dockerfile) | `${PHPMYADMIN_PORT}` (default `8080`) | `dockphpcuy-phpmyadmin-latest` |
+| `phpmyadmin` | built from [`PHPMyAdmin/`](PHPMyAdmin/Dockerfile) | `${PHPMYADMIN_PORT}` (default `8080`) | `dockphpcuy-phpmyadmin` |
 
 ---
 
@@ -62,8 +62,9 @@ make up                  # or: docker compose up -d
 
 Then open:
 
-- **Projects** → <http://localhost:8000> (i.e. `http://localhost:${NGINX_PORT}`)
-- **phpMyAdmin** → <http://localhost:8080>
+- **Projects root** → <http://localhost:8000> (i.e. `http://localhost:${NGINX_PORT}`)
+- **A project** → `http://<name>.localhost:${NGINX_PORT}` (e.g. <http://myapp.localhost:8000>)
+- **phpMyAdmin** → <http://localhost:8080> (login details in [Database](#-database))
 
 > The `php85` image is built from `PHP85/Dockerfile`. The first `make up` builds it
 > (use `make rebuild` to force a clean rebuild).
@@ -160,6 +161,127 @@ Full guide (manual steps, Laravel / WordPress docroots, troubleshooting):
 
 ---
 
+## 📚 Framework tutorials
+
+All commands run **inside the `php85` container** (it ships Composer, Git, cURL and PHP).
+From the repo root use `docker compose exec php85 sh -c '…'`, or open a shell with `make bash`.
+
+Every framework follows the same flow: create the project under `/var/www` (= `./projects/`),
+add a vhost, reload Nginx, open `http://<name>.localhost:${NGINX_PORT}/`.
+
+The vhost is identical for all frameworks except `root` — save it as `Nginx/conf.d/myapp.conf`:
+
+```nginx
+server {
+    listen 80;
+    server_name myapp.localhost;
+    root /var/www/myapp/public;          # Laravel / Symfony / CodeIgniter use /public
+    index index.php index.html;          # WordPress / plain PHP use /var/www/myapp
+    location / { try_files $uri $uri/ /index.php?$query_string; }
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass php85:9000;
+    }
+}
+```
+
+```bash
+make nginx-reload
+```
+
+### Plain PHP
+
+```bash
+make new name=myapp        # creates the folder, a starter index.php, the vhost, reloads nginx
+```
+
+### Laravel
+
+```bash
+docker compose exec php85 sh -c 'cd /var/www && composer create-project laravel/laravel myapp'
+```
+
+Set `root /var/www/myapp/public;` in the vhost. In `projects/myapp/.env`:
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=mariadb
+DB_PORT=3306
+DB_DATABASE=laravel
+DB_USERNAME=root
+DB_PASSWORD=<MARIADB_ROOT_PASSWORD>
+```
+
+Create the `laravel` database (phpMyAdmin or `make db`), then migrate:
+
+```bash
+docker compose exec php85 sh -c 'cd /var/www/myapp && php artisan migrate'
+```
+
+### Symfony
+
+```bash
+docker compose exec php85 sh -c 'cd /var/www && composer create-project symfony/skeleton:"^7" myapp'
+# full-stack: docker compose exec php85 sh -c 'cd /var/www/myapp && composer require webapp'
+```
+
+Set `root /var/www/myapp/public;`. In `projects/myapp/.env`:
+
+```dotenv
+DATABASE_URL="mysql://root:<MARIADB_ROOT_PASSWORD>@mariadb:3306/myapp?serverVersion=mariadb-11.4.0&charset=utf8mb4"
+```
+
+> `serverVersion` should match your MariaDB — run `SELECT VERSION();` in phpMyAdmin.
+> Create the `myapp` database first.
+
+### CodeIgniter 4
+
+```bash
+docker compose exec php85 sh -c 'cd /var/www && composer create-project codeigniter4/appstarter myapp'
+```
+
+Set `root /var/www/myapp/public;`. In `projects/myapp/.env` (a copy of the shipped `env`):
+
+```dotenv
+database.default.hostname = mariadb
+database.default.database = myapp
+database.default.username = root
+database.default.password = <MARIADB_ROOT_PASSWORD>
+database.default.DBDriver = MySQLi
+```
+
+### WordPress
+
+```bash
+# 1. download WordPress into projects/myapp
+docker compose exec php85 sh -c 'cd /var/www && curl -sL https://wordpress.org/latest.tar.gz | tar xz && mv wordpress myapp'
+
+# 2. create the config file
+docker compose exec php85 sh -c 'cd /var/www/myapp && cp wp-config-sample.php wp-config.php'
+```
+
+Set `root /var/www/myapp;` in the vhost. Edit `projects/myapp/wp-config.php`:
+
+```php
+define('DB_NAME', 'wordpress');
+define('DB_USER', 'root');            // or MARIADB_USER from .env
+define('DB_PASSWORD', '<MARIADB_ROOT_PASSWORD>');
+define('DB_HOST', 'mariadb');         // the Docker service name
+```
+
+Create the `wordpress` database, reload Nginx, then open
+`http://myapp.localhost:${NGINX_PORT}/` and run the installer.
+
+> WordPress needs `mysqli` (installed) and a writable `wp-content/`. If uploads fail, check
+> ownership under `projects/myapp/wp-content`.
+
+> **File ownership:** files created inside the container are owned by `root`. To create them
+> owned by your host user instead, run as yourself:
+> `docker compose exec -u "$(id -u):$(id -g)" -e COMPOSER_HOME=/tmp/composer php85 sh -c '…'`.
+
+---
+
 ## ⌨️ Common commands
 
 Run `make help` to list everything.
@@ -174,6 +296,7 @@ Run `make help` to list everything.
 | `make bash` | Bash into the PHP container |
 | `make sh s=nginx` | Shell into any service |
 | `make db` | Open the MariaDB client as root |
+| `make pma-setup` | Enable phpMyAdmin's configuration storage (pmadb) |
 | `make exec s=php85 c="php -v"` | Run any command inside a service |
 | `make info` | Show PHP version and loaded extensions |
 | `make new name=myapp` | Scaffold a new project |
@@ -247,6 +370,36 @@ Need another extension? Edit [`PHP85/Dockerfile`](PHP85/Dockerfile) and run `mak
   `PMA_THEME_VERSION` in [`PHPMyAdmin/Dockerfile`](PHPMyAdmin/Dockerfile) and update
   `$cfg['ThemeDefault']` in [`PHPMyAdmin/config.user.inc.php`](PHPMyAdmin/config.user.inc.php),
   then run `make build`.
+
+### Connect with phpMyAdmin
+
+Open `http://localhost:${PHPMYADMIN_PORT}` (default <http://localhost:8080>) and log in with:
+
+| Field | Value |
+|---|---|
+| **Server** | `mariadb` |
+| **Username** | `root`, or `MARIADB_USER` from `.env` |
+| **Password** | `MARIADB_ROOT_PASSWORD`, or `MARIADB_PASSWORD` from `.env` |
+
+Use `mariadb` as the server host — phpMyAdmin talks to MariaDB over the internal Docker
+network, **not** `localhost`. The database is **not** published to your host by default, so
+from your machine use phpMyAdmin in the browser or `make db` for a CLI client; if you want a
+desktop client (TablePlus, DBeaver…), add a `ports:` mapping to the `mariadb` service.
+
+> Need a database before installing an app? Create it from phpMyAdmin (or `make db` →
+> `CREATE DATABASE myapp;`). Dumping/importing works from phpMyAdmin's **Import**/**Export** tabs.
+
+#### Configuration storage (pmadb)
+
+phpMyAdmin's extended features (relations, bookmarks, SQL history, designer, …) need the
+`phpmyadmin` database with its `pma__*` tables. Create them once (idempotent):
+
+```bash
+make pma-setup
+```
+
+Without this, phpMyAdmin shows *"The phpMyAdmin configuration storage is not completely
+configured"* and disables those features.
 
 ---
 
