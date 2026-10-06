@@ -1,0 +1,31 @@
+# Local environment / secrets
+.env
+
+# Runtime data & logs
+MariaDB/data/
+logs/
+
+# User projects (keep the guide)
+projects/*
+!projects/README.md
+
+# Local tooling
+.commandcode/
+.rtk/
+CLAUDE.md
+
+# OS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+
+# PHP
+vendor/
+
+# Node
+node_modules/
+
+# Logs
+*.log
