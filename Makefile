@@ -21,11 +21,11 @@ down: ## Stop and remove the containers
 restart: ## Restart all services
 	$(COMPOSE) restart
 
-build: ## Build the PHP image
+build: ## Build the images
 	$(COMPOSE) build
 
-rebuild: ## Rebuild the PHP image without cache
-	$(COMPOSE) build --no-cache php85
+rebuild: ## Rebuild all images without cache
+	$(COMPOSE) build --no-cache
 
 ps: ## Show container status
 	$(COMPOSE) ps

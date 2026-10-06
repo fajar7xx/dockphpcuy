@@ -84,7 +84,8 @@ services:
           memory: "${MARIADB_MEMORY:-640M}"
 
   phpmyadmin:
-    image: phpmyadmin:latest
+    build:
+      context: ./PHPMyAdmin
     container_name: dockphpcuy-phpmyadmin-latest
     restart: unless-stopped
     ports:

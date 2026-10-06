@@ -1,9 +1,11 @@
 # Local environment / secrets
 .env
 
-# Runtime data & logs
-MariaDB/data/
-logs/
+# Runtime data & logs (keep the folders, ignore their contents)
+MariaDB/data/*
+!MariaDB/data/.gitkeep
+logs/*
+!logs/.gitkeep
 
 # User projects (keep the guide)
 projects/*

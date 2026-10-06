@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Docker stack: PHP 8.5 (FPM), Nginx, MariaDB (LTS) and phpMyAdmin
+  (built from [`PHPMyAdmin/`](PHPMyAdmin/Dockerfile) with the BooDark theme)
 - PHP extensions: `bcmath`, `exif`, `gd` (freetype/jpeg/webp), `intl`, `mysqli`,
   `pcntl`, `pdo_mysql`, `pdo_pgsql`, `soap`, `sockets`, `xsl`, `zip`, plus PECL
   `redis` (with igbinary), `igbinary` and `imagick`
@@ -19,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make` wrapper for common tasks (`up`, `down`, `bash`, `logs`, `db`, `new`, …)
 - `make new name=…` scaffolder for new projects
 - Configurable CPU / memory limits per service via `.env`
+- Runtime directories (`MariaDB/data`, `logs`, `PHPMyAdmin`) kept in the repo via
+  `.gitkeep` placeholders, so a fresh clone is ready to run
 - Documentation: `README.md`, `projects/README.md`, `CONTRIBUTING.md`
 - MIT license
 

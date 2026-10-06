@@ -21,7 +21,7 @@ DockPHP Cuy runs a complete PHP stack (Laravel, Symfony, WordPress, or plain PHP
 - 🐘 PHP 8.5 (php-fpm) with a rich set of extensions (see [PHP extensions](#-php-extensions))
 - 🌐 Nginx
 - 🗄️ MariaDB (LTS)
-- 🛠️ phpMyAdmin
+- 🛠️ phpMyAdmin (with the BooDark theme)
 - 🚀 Laravel / Symfony / WordPress ready
 - 📦 Project files mounted straight from your machine (`./projects` → `/var/www`)
 - 🔀 One virtual host per project (`<name>.localhost`)
@@ -37,7 +37,7 @@ DockPHP Cuy runs a complete PHP stack (Laravel, Symfony, WordPress, or plain PHP
 | `nginx` | `nginx:alpine` | `${NGINX_PORT}` (default `8000`) | `dockphpcuy-nginx` |
 | `php85` | built from [`PHP85/`](PHP85/Dockerfile) | – (internal `9000`) | `dockphpcuy-php85` |
 | `mariadb` | `mariadb:lts` | – (internal `3306`) | `dockphpcuy-mariadb-lts` |
-| `phpmyadmin` | `phpmyadmin:latest` | `${PHPMYADMIN_PORT}` (default `8080`) | `dockphpcuy-phpmyadmin-latest` |
+| `phpmyadmin` | built from [`PHPMyAdmin/`](PHPMyAdmin/Dockerfile) | `${PHPMYADMIN_PORT}` (default `8080`) | `dockphpcuy-phpmyadmin-latest` |
 
 ---
 
@@ -131,6 +131,10 @@ DockPHPCuy/
 │
 ├── MariaDB/
 │   └── data/               # database files (persisted)
+│
+├── PHPMyAdmin/
+│   ├── Dockerfile          # phpMyAdmin image + BooDark theme
+│   └── config.user.inc.php # phpMyAdmin user config (default theme)
 │
 ├── projects/               # your applications  →  /var/www
 └── logs/
@@ -239,6 +243,10 @@ Need another extension? Edit [`PHP85/Dockerfile`](PHP85/Dockerfile) and run `mak
 - `pdo_mysql` and `mysqli` are both available.
 - Data is persisted in `./MariaDB/data`.
 - GUI: phpMyAdmin at `http://localhost:${PHPMYADMIN_PORT}`, or `make db` for the CLI.
+- phpMyAdmin uses the **BooDark** theme. To switch themes, set `PMA_THEME` /
+  `PMA_THEME_VERSION` in [`PHPMyAdmin/Dockerfile`](PHPMyAdmin/Dockerfile) and update
+  `$cfg['ThemeDefault']` in [`PHPMyAdmin/config.user.inc.php`](PHPMyAdmin/config.user.inc.php),
+  then run `make build`.
 
 ---
 
