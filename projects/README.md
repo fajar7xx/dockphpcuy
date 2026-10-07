@@ -103,6 +103,64 @@ index index.php;
 location / { try_files $uri $uri/ /index.php?$is_args$args; }
 ```
 
+#### Updating WordPress from the dashboard
+
+WordPress asks for FTP credentials when PHP-FPM cannot safely write to the site files.
+This stack runs PHP-FPM as `www-data` and mounts `projects/` into the container, so
+WordPress needs write access to the site root and the plugin and theme directories.
+
+1. In `projects/myapp/wp-config.php`, add this before the “That’s all, stop editing!”
+   line:
+
+   ```php
+   define('FS_METHOD', 'direct');
+   ```
+
+   This tells WordPress to use direct filesystem access; it does not grant file permissions.
+2. Choose one of these permission approaches. Run commands from the repository root and
+   replace `myapp` with the project directory.
+
+**Option A — keep the host owner (recommended).** Grant write access to PHP-FPM without
+changing the owner. On Linux, install `acl` if `setfacl` is unavailable, then run:
+
+```bash
+www_data_uid=$(docker compose exec -T php85 id -u www-data | tr -d '\r')
+setfacl -R -m "u:${www_data_uid}:rwX" projects/myapp
+find projects/myapp -type d -exec setfacl -m "d:u:${www_data_uid}:rwx" {} +
+```
+
+The default ACL lets WordPress create files and directories during later updates. On macOS
+with Docker Desktop, add an ACL for your host user while preserving file ownership:
+
+```bash
+chmod -R +a "user:$(id -un) allow read,write,execute,delete,add_file,add_subdirectory,file_inherit,directory_inherit" projects/myapp
+```
+
+**Option B — make `www-data` the owner.** Simple and works on Linux and macOS:
+
+```bash
+docker compose exec -u root php85 chown -R www-data:www-data /var/www/myapp
+```
+
+This changes ownership of the bind-mounted files. The host user may no longer be able to
+edit them without changing permissions or ownership again.
+
+Docker Desktop's file sharing can affect how these permissions appear inside the container.
+Check that PHP-FPM can write before relying on dashboard updates:
+
+```bash
+docker compose exec -u www-data php85 sh -c \
+  'test -w /var/www/myapp && test -w /var/www/myapp/wp-content/plugins && test -w /var/www/myapp/wp-content/themes'
+```
+
+If the check fails, do not use `chmod -R 777`; review the host ACL or use Option A.
+Back up the site before updating WordPress, plugins, or themes.
+
+For WordPress filesystem behavior, see the
+[WordPress Filesystem API documentation](https://developer.wordpress.org/apis/filesystem/).
+
+---
+
 ### Plain PHP
 
 ```nginx

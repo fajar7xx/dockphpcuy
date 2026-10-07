@@ -276,6 +276,9 @@ Create the `wordpress` database, reload Nginx, then open
 > WordPress needs `mysqli` (installed) and a writable `wp-content/`. If uploads fail, check
 > ownership under `projects/myapp/wp-content`.
 
+For dashboard updates, FTP prompts, and safe file-permission options, see the
+[WordPress update guide](projects/README.md#updating-wordpress-from-the-dashboard).
+
 > **File ownership:** files created inside the container are owned by `root`. To create them
 > owned by your host user instead, run as yourself:
 > `docker compose exec -u "$(id -u):$(id -g)" -e COMPOSER_HOME=/tmp/composer php85 sh -c '…'`.
